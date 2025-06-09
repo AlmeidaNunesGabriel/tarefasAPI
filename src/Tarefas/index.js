@@ -1,26 +1,30 @@
 import React, {Component, useEffect, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Button} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, SafeAreaView} from 'react-native';
 import api from '../services/api';
 import Card from '../components/Card';
 import { useNavigation } from '@react-navigation/native';
-
 
 export default function Tarefas() {
   const [tarefas, setTarefas] = useState([])
   const [loading, setLoading] = useState(true)
 
-
-  useEffect(async () => {
-    await carregarTarefas()
-    setLoading(false)
+  useEffect(() => {
+    const inicializar = async () => {
+      await carregarTarefas()
+      setLoading(false)
+    }
+    
+    inicializar()
   }, [])
 
-
   const carregarTarefas = async () => {
-    const response = await api.get('/tasks')
-    setTarefas(response.data)
+    try {
+      const response = await api.get('/tasks')
+      setTarefas(response.data)
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error)
+    }
   }
-
 
   const navigation = useNavigation();
  
@@ -28,68 +32,154 @@ export default function Tarefas() {
       navigation.navigate('Formulario', {atualizarLista: carregarTarefas});
   }
 
+  const renderEmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyTitle}>Nenhuma tarefa encontrada</Text>
+      <Text style={styles.emptySubtitle}>Que tal criar sua primeira tarefa?</Text>
+      <TouchableOpacity style={styles.emptyButton} onPress={irFormulario}>
+        <Text style={styles.emptyButtonText}>+ Criar Tarefa</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   if(loading){
     return(
-      <View style={{alignItems: 'center', justifyContent: 'center', flex:1}}>
-        <ActivityIndicator color="#09A6FF" size={40}/>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#3498db" size={50}/>
+        <Text style={styles.loadingText}>Carregando tarefas...</Text>
       </View>
     )
-  }else{
+  } else {
     return(
-      <View style={styles.container}>
-        <Button title="Incluir" onPress={irFormulario}/>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Minhas Tarefas</Text>
+          <Text style={styles.headerSubtitle}>
+            {tarefas.length} {tarefas.length === 1 ? 'tarefa' : 'tarefas'}
+          </Text>
+        </View>
 
+        <TouchableOpacity style={styles.addButton} onPress={irFormulario}>
+          <Text style={styles.addButtonText}>+ Nova Tarefa</Text>
+        </TouchableOpacity>
 
         <FlatList
-        data={tarefas}
-        keyExtractor={item => item.id.toString() }
-        renderItem={ ({item}) => <Card data={item} funcCarregarTarefas={carregarTarefas} /> }
+          data={tarefas}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({item}) => <Card data={item} funcCarregarTarefas={carregarTarefas} />}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyList}
         />
-
-
-      </View>
+      </SafeAreaView>
     );
   }
 }
 
-
 const styles = StyleSheet.create({
-  card:{
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
     shadowColor: '#000',
-    backgroundColor: '#FFF',
-    shadowOffset: {width:0, height: 1},
-    shadowOpacity: 0.8,
-    margin: 15,
-    shadowRadius: 5,
-    borderRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 3,
   },
-  titulo:{
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  addButton: {
+    backgroundColor: '#3498db',
+    marginHorizontal: 20,
+    marginVertical: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#3498db',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  addButtonText: {
+    color: '#fff',
     fontSize: 18,
-    padding: 15,
+    fontWeight: 'bold',
   },
-  descricao:{
-    fontSize: 10,
-    padding: 15,
+  listContainer: {
+    paddingBottom: 20,
   },
-  buttonEditar: {
-    borderRadius: 5,
-    marginVertical: 20,
-    alignSelf: 'flex-start',
-    backgroundColor: "yellow",
-    marginVertical: 0,
-    marginLeft: 10
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
   },
-  buttonExcluir: {
-    borderRadius: 5,
-    marginVertical: 20,
-    alignSelf: 'flex-start',
-    backgroundColor: "gray",
-    marginVertical: 0,
-    marginLeft: 10,
-    backgroundColor: "tomato",
-    marginTop: 10,
-    marginBottom: 10
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  emptyButton: {
+    backgroundColor: '#27ae60',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    shadowColor: '#27ae60',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

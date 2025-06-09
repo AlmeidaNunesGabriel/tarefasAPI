@@ -1,91 +1,177 @@
 import React, {Component, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Alert} from 'react-native';
 import api from '../../services/api';
 import { useNavigation } from '@react-navigation/native';
-
 
 function Card({data, funcCarregarTarefas}){
   const [id, setId] = useState(data?.id)
   const [title, setTitle] = useState(data?.title)
   const [description, setDescription] = useState(data?.description)
-
+  const [loading, setLoading] = useState(false)
 
   const excluirTarefa = async () => {
-    const response = await api.delete(`/tasks/${id}`);
-    await funcCarregarTarefas();
+    Alert.alert(
+      'Confirmar exclusão',
+      'Tem certeza que deseja excluir esta tarefa?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const response = await api.delete(`/tasks/${id}`);
+              // Usar callback via navigation em vez de prop
+              navigation.navigate('Tarefas');
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir a tarefa');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   }
-
 
   const navigation = useNavigation();
  
   async function irFormulario(){
-      navigation.navigate('Formulario', { id: id, title: title, description: description, atualizarLista: funcCarregarTarefas});
+      navigation.navigate('Formulario', { 
+        id: id, 
+        title: title, 
+        description: description
+      });
   }
 
-
-
-
   return(
-    <View>
-     
+    <View style={styles.cardContainer}>
       <View style={styles.card}>
-        <Text style={styles.titulo}>{title}</Text>
-       
-        <Text style={styles.descricao}>{description}</Text>
+        <View style={styles.cardContent}>
+          <Text style={styles.titulo} numberOfLines={2}>
+            {title}
+          </Text>
+         
+          {description && (
+            <Text style={styles.descricao} numberOfLines={3}>
+              {description}
+            </Text>
+          )}
+        </View>
 
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.buttonEditar} 
+            onPress={irFormulario}
+            disabled={loading}
+          >
+            <Text style={styles.buttonEditarText}>✏️ Editar</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.buttonEditar} onPress={irFormulario}>
-          <Text>Editar</Text>
-        </TouchableOpacity>
-
-
-        <TouchableOpacity style={styles.buttonExcluir} onPress={excluirTarefa}>
-          <Text>Excluir</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.buttonExcluir, loading && styles.disabledButton]} 
+            onPress={excluirTarefa}
+            disabled={loading}
+          >
+            <Text style={styles.buttonExcluirText}>
+              {loading ? '⏳' : '🗑️'} {loading ? 'Excluindo...' : 'Excluir'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-
     </View>
   );
 }
  
 const styles = StyleSheet.create({
-  card:{
+  cardContainer: {
+    marginHorizontal: 20,
+    marginVertical: 8,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    backgroundColor: '#FFF',
-    shadowOffset: {width:0, height: 1},
-    shadowOpacity: 0.8,
-    margin: 15,
-    shadowRadius: 5,
-    borderRadius: 5,
-    elevation: 3,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3498db',
   },
-  titulo:{
-    fontSize: 18,
-    padding: 15,
+  cardContent: {
+    marginBottom: 16,
   },
-  descricao:{
-    fontSize: 10,
-    padding: 15,
+  titulo: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  descricao: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   buttonEditar: {
-    borderRadius: 5,
-    marginVertical: 20,
-    alignSelf: 'flex-start',
-    backgroundColor: "yellow",
-    marginVertical: 0,
-    marginLeft: 10
+    flex: 1,
+    backgroundColor: '#f39c12',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#f39c12',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  buttonEditarText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   buttonExcluir: {
-    borderRadius: 5,
-    marginVertical: 20,
-    alignSelf: 'flex-start',
-    backgroundColor: "gray",
-    marginVertical: 0,
-    marginLeft: 10,
-    backgroundColor: "tomato",
-    marginTop: 10,
-    marginBottom: 10
+    flex: 1,
+    backgroundColor: '#e74c3c',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#e74c3c',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  buttonExcluirText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#bdc3c7',
+    shadowOpacity: 0.1,
   },
 });
  
