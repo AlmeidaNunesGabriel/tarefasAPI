@@ -29,8 +29,10 @@ export default function Form({route}) {
         const response = await api.post('/tasks', body, {headers: {'Content-Type': 'application/json'}});
       }
 
-      navigation.goBack()  
+      // Navegar de volta para a tela de tarefas e forçar atualização
+      navigation.navigate('Tarefas', { refresh: true });
     } catch (error) {
+      console.error('Erro ao salvar tarefa:', error);
       Alert.alert('Erro', 'Não foi possível salvar a tarefa');
     } finally {
       setLoading(false);

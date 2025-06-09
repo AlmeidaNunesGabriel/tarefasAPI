@@ -9,6 +9,8 @@ function Card({data, funcCarregarTarefas}){
   const [description, setDescription] = useState(data?.description)
   const [loading, setLoading] = useState(false)
 
+  const navigation = useNavigation();
+
   const excluirTarefa = async () => {
     Alert.alert(
       'Confirmar exclusão',
@@ -25,9 +27,12 @@ function Card({data, funcCarregarTarefas}){
             setLoading(true);
             try {
               const response = await api.delete(`/tasks/${id}`);
-              // Usar callback via navigation em vez de prop
-              navigation.navigate('Tarefas');
+              // Atualizar a lista após exclusão
+              if (funcCarregarTarefas) {
+                await funcCarregarTarefas();
+              }
             } catch (error) {
+              console.error('Erro ao excluir tarefa:', error);
               Alert.alert('Erro', 'Não foi possível excluir a tarefa');
             } finally {
               setLoading(false);
@@ -37,8 +42,6 @@ function Card({data, funcCarregarTarefas}){
       ]
     );
   }
-
-  const navigation = useNavigation();
  
   async function irFormulario(){
       navigation.navigate('Formulario', { 

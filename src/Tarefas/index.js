@@ -2,20 +2,13 @@ import React, {Component, useEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, SafeAreaView} from 'react-native';
 import api from '../services/api';
 import Card from '../components/Card';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-export default function Tarefas() {
+export default function Tarefas({ route }) {
   const [tarefas, setTarefas] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const inicializar = async () => {
-      await carregarTarefas()
-      setLoading(false)
-    }
-    
-    inicializar()
-  }, [])
+  const navigation = useNavigation();
 
   const carregarTarefas = async () => {
     try {
@@ -26,10 +19,29 @@ export default function Tarefas() {
     }
   }
 
-  const navigation = useNavigation();
- 
+  // Carrega as tarefas quando o componente é montado
+  useEffect(() => {
+    const inicializar = async () => {
+      await carregarTarefas()
+      setLoading(false)
+    }
+    
+    inicializar()
+  }, [])
+
+  // Recarrega as tarefas sempre que a tela ganhar foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.refresh) {
+        carregarTarefas();
+        // Limpar o parâmetro para evitar recarregamentos desnecessários
+        navigation.setParams({ refresh: undefined });
+      }
+    }, [route.params?.refresh])
+  );
+
   async function irFormulario(){
-      navigation.navigate('Formulario', {atualizarLista: carregarTarefas});
+      navigation.navigate('Formulario');
   }
 
   const renderEmptyList = () => (
